@@ -37,7 +37,7 @@ location = st.text_input("Enter your location")
 destination = st.text_input("Enter your destination")
 
 if location and destination:
-    st.header("Available Flights")
+    st.header("Available Flights!")
     flight_df = pd.DataFrame(flights)
     st.write(flight_df)
 
