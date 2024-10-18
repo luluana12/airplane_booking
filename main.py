@@ -1,5 +1,74 @@
 import streamlit as st
 import pandas as pd
+import requests
+
+# Amadeus API credentials
+API_KEY = "e20u7Ad0NZASNyT32ufVGJXTdKpGDzI6"
+API_SECRET = "UK8bsoENpcq8PvVH"
+
+# Amadeus OAuth2 token URL
+TOKEN_URL = "https://test.api.amadeus.com/v1/security/oauth2/token"
+
+# Amadeus flight offers search URL
+FLIGHTS_URL = "https://test.api.amadeus.com/v2/shopping/flight-offers"
+
+# Function to get an access token
+def get_access_token():
+    response = requests.post(
+        TOKEN_URL,
+        data={
+            "grant_type": "client_credentials",
+            "client_id": API_KEY,
+            "client_secret": API_SECRET
+        }
+    )
+    if response.status_code != 200:
+        st.error(f"Failed to get access token: {response.status_code} - {response.text}")
+    return response.json().get("access_token")
+
+# Function to search for flights
+def search_flights(origin, destination, departure_date):
+    token = get_access_token()
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+    params = {
+        "originLocationCode": origin,
+        "destinationLocationCode": destination,
+        "departureDate": departure_date,
+        "adults": 1
+    }
+    response = requests.get(FLIGHTS_URL, headers=headers, params=params)
+    return response.json()
+
+# Streamlit UI
+st.title("Flight Reservation System with Amadeus API")
+
+# User inputs for origin and destination
+location = st.text_input("Enter your location (IATA code)")
+destination = st.text_input("Enter your destination (IATA code)")
+departure_date = st.date_input("Select departure date")
+
+# Search for flights if location, destination, and date are provided
+if location and destination and departure_date:
+    st.header("Available Flights")
+
+    flights_data = search_flights(location, destination, departure_date)
+
+    # Process and display flights data
+    if "data" in flights_data:
+        flight_offers = flights_data["data"]
+        for offer in flight_offers:
+            segments = offer["itineraries"][0]["segments"]
+            for segment in segments:
+                st.write(f"Flight from {segment['departure']['iataCode']} to {segment['arrival']['iataCode']}")
+                st.write(f"Departure: {segment['departure']['at']}")
+                st.write(f"Arrival: {segment['arrival']['at']}")
+                st.write(f"Duration: {segment['duration']}")
+                st.write(f"Carrier: {segment['carrierCode']}")
+                st.write("---")
+    else:
+        st.error("No flights found")
 
 #st.write("lu")
 #data=pd.read_csv("data.csv")
